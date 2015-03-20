@@ -37,11 +37,11 @@ end
 
 -- {{{ Variable definitions
 -- Themes define colours, icons, and wallpapers
-beautiful.init("/home/brh/.config/awesome/themes/default/theme.lua")
+beautiful.init("/usr/share/awesome/themes/default/theme.lua")
 
 -- This is used later as the default terminal and editor to run.
-terminal = "konsole"
-editor = os.getenv("EDITOR") or "vim"
+terminal = "x-terminal-emulator"
+editor = os.getenv("EDITOR") or "editor"
 editor_cmd = terminal .. " -e " .. editor
 
 -- Default modkey.
@@ -54,27 +54,27 @@ modkey = "Mod4"
 -- Table of layouts to cover with awful.layout.inc, order matters.
 layouts =
 {
-    awful.layout.suit.tile,
     awful.layout.suit.floating,
-    awful.layout.suit.tile.left
+    awful.layout.suit.tile,
+    awful.layout.suit.tile.left,
+    awful.layout.suit.tile.bottom,
+    awful.layout.suit.tile.top,
+    awful.layout.suit.fair,
+    awful.layout.suit.fair.horizontal,
+    awful.layout.suit.spiral,
+    awful.layout.suit.spiral.dwindle,
+    awful.layout.suit.max,
+    awful.layout.suit.max.fullscreen,
+    awful.layout.suit.magnifier
 }
 -- }}}
 
 -- {{{ Tags
 -- Define a tag table which hold all screen tags.
-tags = {
-    settings = {
-        { layout = layouts[1]},
-        { layout = layouts[1]},
-        { layout = layouts[3]},
-        { layout = layouts[3]},
-        { layout = layouts[1]},
-        { layout = layouts[1]}
-    }
-}
+tags = {}
 for s = 1, screen.count() do
     -- Each screen has its own tag table.
-    tags[s] = awful.tag({ 1, 2, 3, 4, 5, 6, 7, 8, 9 }, s, tags.settings[s].layout)
+    tags[s] = awful.tag({ 1, 2, 3, 4, 5, 6, 7, 8, 9 }, s, layouts[1])
 end
 -- }}}
 
@@ -195,54 +195,6 @@ root.buttons(awful.util.table.join(
 ))
 -- }}}
 
--- Table that specifies relative positions of monitors, based on screen numbers
--- Matrix [] where index 1,1 is the top left monitor, and 2,3 is the bottom right monitor
-screenToCoords = {
-    -- (1) Bottom Center
-    { 2, 2 },
-    -- (2) Top Center
-    { 1, 2 },
-    -- (3) Top Left
-    { 1, 1 },
-    -- (4) Bottom Left
-    { 2, 1 },
-    -- (5) Bottom Right
-    { 2, 3 },
-    -- (6) Top Right
-    { 1, 3 }
-}
-
-coordinatesToScreenNumber = {
-    -- i --> Top Row Screen Numbers
-    { 3, 2, 6},
-    -- i --> Bottom Row Screen Numbers
-    { 4, 1, 5}
-}
-
-function setScreen(i, j)
-    awful.screen.focus(coordinatesToScreenNumber[i][j])
-end
-
--- Movement functions
-function moveUp (i, j)
-    if(i > 1) then i = i - 1 end
-    setScreen(i, j)
-end
-
-function moveDown (i, j)
-    if(i < 2) then i = i + 1 end
-    setScreen(i, j)
-end
-
-function moveLeft (i, j)
-    if(j > 1) then j = j - 1 end
-    setScreen(i, j)
-end
-function moveRight (i, j)
-    if(j < 3) then j = j + 1 end
-    setScreen(i, j)
-end
-
 -- {{{ Key bindings
 globalkeys = awful.util.table.join(
     awful.key({ modkey,           }, "Left",   awful.tag.viewprev       ),
@@ -264,6 +216,8 @@ globalkeys = awful.util.table.join(
     -- Layout manipulation
     awful.key({ modkey, "Shift"   }, "j", function () awful.client.swap.byidx(  1)    end),
     awful.key({ modkey, "Shift"   }, "k", function () awful.client.swap.byidx( -1)    end),
+    awful.key({ modkey, "Control" }, "j", function () awful.screen.focus_relative( 1) end),
+    awful.key({ modkey, "Control" }, "k", function () awful.screen.focus_relative(-1) end),
     awful.key({ modkey,           }, "u", awful.client.urgent.jumpto),
     awful.key({ modkey,           }, "Tab",
         function ()
@@ -272,12 +226,6 @@ globalkeys = awful.util.table.join(
                 client.focus:raise()
             end
         end),
-
-    -- Vim-like keys for changing screens on my monitors
-    awful.key({ modkey, "Control" }, "h", function() moveLeft(screenToCoords[client.focus.screen][1], screenToCoords[client.focus.screen][2]) end),
-    awful.key({ modkey, "Control" }, "j", function() moveDown(screenToCoords[client.focus.screen][1], screenToCoords[client.focus.screen][2]) end),
-    awful.key({ modkey, "Control" }, "k", function() moveUp(screenToCoords[client.focus.screen][1], screenToCoords[client.focus.screen][2]) end),
-    awful.key({ modkey, "Control" }, "l", function() moveRight(screenToCoords[client.focus.screen][1], screenToCoords[client.focus.screen][2]) end),
 
     -- Standard program
     awful.key({ modkey,           }, "Return", function () awful.util.spawn(terminal) end),
@@ -288,6 +236,8 @@ globalkeys = awful.util.table.join(
     awful.key({ modkey,           }, "h",     function () awful.tag.incmwfact(-0.05)    end),
     awful.key({ modkey, "Shift"   }, "h",     function () awful.tag.incnmaster( 1)      end),
     awful.key({ modkey, "Shift"   }, "l",     function () awful.tag.incnmaster(-1)      end),
+    awful.key({ modkey, "Control" }, "h",     function () awful.tag.incncol( 1)         end),
+    awful.key({ modkey, "Control" }, "l",     function () awful.tag.incncol(-1)         end),
     awful.key({ modkey,           }, "space", function () awful.layout.inc(layouts,  1) end),
     awful.key({ modkey, "Shift"   }, "space", function () awful.layout.inc(layouts, -1) end),
 
@@ -382,8 +332,6 @@ awful.rules.rules = {
                      border_color = beautiful.border_normal,
                      focus = true,
                      keys = clientkeys,
-                     maximized_vertical = false,
-                     maximized_horizontal = false,
                      buttons = clientbuttons } },
     { rule = { class = "MPlayer" },
       properties = { floating = true } },
@@ -402,6 +350,14 @@ awful.rules.rules = {
 client.add_signal("manage", function (c, startup)
     -- Add a titlebar
     -- awful.titlebar.add(c, { modkey = modkey })
+
+    -- Enable sloppy focus
+    c:add_signal("mouse::enter", function(c)
+        if awful.layout.get(c.screen) ~= awful.layout.suit.magnifier
+            and awful.client.focus.filter(c) then
+            client.focus = c
+        end
+    end)
 
     if not startup then
         -- Set the windows at the slave,
